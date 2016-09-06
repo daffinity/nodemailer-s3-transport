@@ -66,7 +66,7 @@ S3Transport.prototype.send = function send (mail, callback) {
       ServerSideEncryption: 'AES256',
       // TODO: Ensure that we escape this and handle unicode.
       // Apply the file name on download.
-      ContentDisposition: 'attachment; filename="'+ filename +'"',
+      ContentDisposition: 'attachment; filename="'+ key +'"',
       // TODO: Make sure this is correct.
       ContentType: 'message/rfc822'
     }
@@ -75,7 +75,7 @@ S3Transport.prototype.send = function send (mail, callback) {
 
   var _onError = function _onError (msg) {
     return function _onErrorHandler (err) {
-      log.error('S3Transport send: '+ msg +' Error: '+ err, err);
+      console.error('S3Transport send: '+ msg +' Error: '+ err, err);
 
       if (callbackSent) return;
 
@@ -97,11 +97,12 @@ S3Transport.prototype.send = function send (mail, callback) {
       callback(null, {
         envelope: mail.data.envelope || mail.message.getEnvelope(),
         messageId: mail.message.getHeader('message-id'),
-        key: key
+        key: key,
+        s3Receipt: result
       });
     });
 
-  input.on('error', _onError('input stream'));
+  messageStream.on('error', _onError('messageStream'));
 };
 
 

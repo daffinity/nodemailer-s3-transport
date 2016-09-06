@@ -29,7 +29,10 @@ MockBuilder.prototype.getHeader = function() {
 
 describe('S3 Transport Tests', function() {
   it('Should expose version number', function() {
-    var client = s3Transport();
+    var client = s3Transport({
+      bucketName: 'fake-bucket-name-that-wont-exist',
+      bucketRegion: 'fake-bucket-region-that-wont-exist'
+    });
     expect(client.name).to.exist;
     expect(client.version).to.exist;
   });

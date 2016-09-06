@@ -20,7 +20,9 @@
     "url": "https://github.com/daffinity/nodemailer-s3-transport/issues"
   },
   "homepage": "http://github.com/daffinity/nodemailer-s3-transport",
-  "dependencies": {},
+  "dependencies": {
+    "aws-sdk": "^2.5.5"
+  },
   "devDependencies": {
     "chai": "~1.8.1",
     "grunt": "~0.4.1",

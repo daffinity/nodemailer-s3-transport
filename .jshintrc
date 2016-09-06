@@ -5,15 +5,16 @@
   "evil": true,
   "unused": true,
   "undef": true,
-  "newcap": true,
+  "newcap": false,
   "esnext": true,
-  "curly": true,
+  "curly": false,
   "eqeqeq": true,
   "expr": true,
 
   "predef": [
     "describe",
     "it",
+    "xit",
     "beforeEach",
     "afterEach"
   ]
