@@ -1,77 +1,107 @@
 'use strict';
 
 var packageData = require('../package.json');
-var os = require('os');
-var path = require('path');
 var crypto = require('crypto');
-var fs = require('fs');
+var AWS = require('aws-sdk');
+var S3 = AWS.S3;
 
 // expose to the world
-module.exports = function(options) {
-    return new PickupTransport(options);
+module.exports = function (options) {
+  return new S3Transport(options);
 };
 
 /**
- * <p>Generates a Transport object for Pickup</p>
+ * <p>Generates a Transport object for S3</p>
  *
  * <p>Possible options can be the following:</p>
  *
  * <ul>
- *     <li><b>directory</b> - The directory where applications save e-mail for later processing by the SMTP server</li>
+ *     <li><b>bucketName</b> - The S3 bucket name where applications save e-mail (required)</li>
+ *     <li><b>bucketRegion</b> - The AWS region of the S3 bucket where applications save e-mail (required)</li>
  * </ul>
  *
  * @constructor
- * @param {Object} optional config parameter for the AWS Pickup service
+ * @param {Object} optional config parameter for the S3 service
  */
-function PickupTransport(options) {
-    options = options || {};
+function S3Transport (options) {
+  options = options || {};
 
-    this.options = options;
-    this.options.directory = options.directory || os.tmpdir();
+  this.options = options;
+  this.options.bucketName = options.bucketName;
+  this.options.bucketRegion = options.bucketRegion;
 
-    this.name = 'Pickup';
-    this.version = packageData.version;
+  if (!options.bucketName) throw TypeError('S3Transport: Missing required option "bucketName"');
+  if (!options.bucketRegion) throw TypeError('S3Transport: Missing required option "bucketRegion"');
+
+  this.name = 'S3';
+  this.version = packageData.version;
 }
 
+
 /**
- * <p>Compiles a mailcomposer message and forwards it to handler that sends it.</p>
+ * <p>Compiles a mailcomposer message and streams it to an S3 bucket.</p>
  *
  * @param {Object} emailMessage MailComposer object
  * @param {Function} callback Callback function to run when the sending is completed
  */
-PickupTransport.prototype.send = function(mail, callback) {
-    // Pickup strips this header line by itself
-    mail.message.keepBcc = true;
+S3Transport.prototype.send = function send (mail, callback) {
+  // Retain BCC for later use.
+  mail.message.keepBcc = true;
 
-    var callbackSent = false;
-    var filename = (((mail.message.getHeader('message-id') || '').replace(/[^a-z0-9\-_.@]/g, '') || crypto.randomBytes(10).toString('hex')) + '.eml');
-    var target = path.join(this.options.directory, filename);
-    var output = fs.createWriteStream(target);
-    var input = mail.message.createReadStream();
+  var callbackSent = false;
 
-    var _onError = function(err) {
-        if (callbackSent) {
-            return;
-        }
-        callbackSent = true;
-        callback(err);
+  // TODO: Make sure this is always a random key to avoid collision with other S3 objects.
+  var key = (((mail.message.getHeader('message-id') || '').replace(/[^a-z0-9\-_.@]/g, '') || crypto.randomBytes(10).toString('hex')) + '.eml');
+
+  var messageStream = mail.message.createReadStream();
+
+  // Upload zip stream to S3.
+  var messageS3 = new S3({
+    region: this.options.bucketRegion,
+    params: {
+      Bucket: this.options.bucketName,
+      Key: key,
+      // Encrypt by default.
+      // TODO: Make this optional.
+      ServerSideEncryption: 'AES256',
+      // TODO: Ensure that we escape this and handle unicode.
+      // Apply the file name on download.
+      ContentDisposition: 'attachment; filename="'+ filename +'"',
+      // TODO: Make sure this is correct.
+      ContentType: 'message/rfc822'
+    }
+  });
+
+
+  var _onError = function _onError (msg) {
+    return function _onErrorHandler (err) {
+      log.error('S3Transport send: '+ msg +' Error: '+ err, err);
+
+      if (callbackSent) return;
+
+      callbackSent = true;
+      callback(err);
     };
+  };
 
-    input.on('error', _onError);
-    output.on('error', _onError);
 
-    output.on('finish', function() {
-        if (callbackSent) {
-            return;
-        }
-        callbackSent = true;
+  // Stream message to S3.
+  messageS3.upload({ Body: messageStream })
+    .on('error', _onError('S3 upload failed'))
+    .send(function sendCallback (err, result) {
+      if (err) return _onError(err, 'S3 upload send callback failed');
 
-        callback(null, {
-            envelope: mail.data.envelope || mail.message.getEnvelope(),
-            messageId: mail.message.getHeader('message-id'),
-            path: target
-        });
+      if (callbackSent) return;
+      callbackSent = true;
+
+      callback(null, {
+        envelope: mail.data.envelope || mail.message.getEnvelope(),
+        messageId: mail.message.getHeader('message-id'),
+        key: key
+      });
     });
 
-    input.pipe(output);
+  input.on('error', _onError('input stream'));
 };
+
+

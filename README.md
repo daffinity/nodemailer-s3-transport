@@ -25,7 +25,7 @@ Where
 
   * **options** defines connection data
      * **bucketName** - The S3 bucket name where applications save e-mail (required)
-     * **bucketRegion** - The S3 bucket region where applications save e-mail (required)
+     * **bucketRegion** - The AWS region of the S3 bucket where applications save e-mail (required)
 
 **Example**
 

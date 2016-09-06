@@ -2,7 +2,7 @@
 
 var chai = require('chai');
 var expect = chai.expect;
-var pickupTransport = require('../src/pickup-transport');
+var s3Transport = require('../src/s3-transport');
 chai.Assertion.includeStack = true;
 var crypto = require('crypto');
 var fs = require('fs');
@@ -10,65 +10,67 @@ var fs = require('fs');
 var randomBytes = crypto.randomBytes(20).toString('hex');
 
 function MockBuilder(envelope, message) {
-    this.envelope = envelope;
-    this.message = new(require('stream').PassThrough)();
-    this.message.end(message);
+  this.envelope = envelope;
+  this.message = new(require('stream').PassThrough)();
+  this.message.end(message);
 }
 
 MockBuilder.prototype.getEnvelope = function() {
-    return this.envelope;
+  return this.envelope;
 };
 
 MockBuilder.prototype.createReadStream = function() {
-    return this.message;
+  return this.message;
 };
 
 MockBuilder.prototype.getHeader = function() {
-    return randomBytes;
+  return randomBytes;
 };
 
-describe('Pickup Transport Tests', function() {
-    it('Should expose version number', function() {
-        var client = pickupTransport();
-        expect(client.name).to.exist;
-        expect(client.version).to.exist;
+describe('S3 Transport Tests', function() {
+  it('Should expose version number', function() {
+    var client = s3Transport();
+    expect(client.name).to.exist;
+    expect(client.version).to.exist;
+  });
+
+  // TODO: Implement mock S3 for these tests.
+
+  xit('Should send message', function(done) {
+    var client = s3Transport();
+
+    client.send({
+      data: {},
+      message: new MockBuilder({
+        from: 'test@valid.sender',
+        to: 'test@valid.recipient'
+      }, 'message')
+    }, function(err, data) {
+      expect(err).to.not.exist;
+      expect(data.messageId).to.equal(randomBytes);
+      expect(data.path).to.contain(randomBytes + '.eml');
+
+      fs.unlink(data.path, done);
+    });
+  });
+
+  xit('Should return an error', function(done) {
+    var client = s3Transport({
+      // use a made up directory that most probably does not exist
+      directory: '/MqauOobH6mgKoL/6pRiNkj7hTEtIA/9YhF9hY115v4I/hqR730EKY7I96G/PILrwPJ45NeCNo'
     });
 
-    it('Should send message', function(done) {
-        var client = pickupTransport();
+    client.send({
+      data: {},
+      message: new MockBuilder({
+        from: 'test@valid.sender',
+        to: 'test@valid.recipient'
+      }, 'message')
+    }, function(err, data) {
+      expect(err).to.exist;
+      expect(data).to.not.exist;
 
-        client.send({
-            data: {},
-            message: new MockBuilder({
-                from: 'test@valid.sender',
-                to: 'test@valid.recipient'
-            }, 'message')
-        }, function(err, data) {
-            expect(err).to.not.exist;
-            expect(data.messageId).to.equal(randomBytes);
-            expect(data.path).to.contain(randomBytes + '.eml');
-
-            fs.unlink(data.path, done);
-        });
+      done();
     });
-
-    it('Should return an error', function(done) {
-        var client = pickupTransport({
-            // use a made up directory that most probably does not exist
-            directory: '/MqauOobH6mgKoL/6pRiNkj7hTEtIA/9YhF9hY115v4I/hqR730EKY7I96G/PILrwPJ45NeCNo'
-        });
-
-        client.send({
-            data: {},
-            message: new MockBuilder({
-                from: 'test@valid.sender',
-                to: 'test@valid.recipient'
-            }, 'message')
-        }, function(err, data) {
-            expect(err).to.exist;
-            expect(data).to.not.exist;
-
-            done();
-        });
-    });
+  });
 });
