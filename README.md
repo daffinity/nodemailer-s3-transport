@@ -1,4 +1,4 @@
-# Pickup transport module for Nodemailer
+# S3 Transport for Nodemailer
 
 Applies for Nodemailer v1.x and not for v0.x where transports are built-in.
 
@@ -6,13 +6,13 @@ Applies for Nodemailer v1.x and not for v0.x where transports are built-in.
 
 Install with npm
 
-    npm install nodemailer-pickup-transport
+    npm install nodemailer-s3-transport
 
 Require to your script
 
 ```javascript
 var nodemailer = require('nodemailer');
-var pickupTransport = require('nodemailer-pickup-transport');
+var pickupTransport = require('nodemailer-s3-transport');
 ```
 
 Create a Nodemailer transport object
@@ -24,16 +24,20 @@ var transporter = nodemailer.createTransport(pickupTransport(options))
 Where
 
   * **options** defines connection data
-     * **directory** - The directory where applications save e-mail for later processing by the SMTP server (required)
+     * **bucketName** - The S3 bucket name where applications save e-mail (required)
+     * **bucketRegion** - The S3 bucket region where applications save e-mail (required)
 
 **Example**
 
 ```javascript
 var transport = nodemailer.createTransport(pickupTransport({
-    directory: 'C:\\inetpub\\mailroot\\Pickup'
+    bucketName: 'my-s3-bucket-name-here',
+    bucketRegion: 'us-east-1'
 }));
 ```
 
 ## License
 
 **MIT**
+
+

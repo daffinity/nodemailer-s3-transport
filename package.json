@@ -1,25 +1,25 @@
 {
-  "name": "nodemailer-pickup-transport",
-  "version": "0.1.1",
-  "description": "Pickup transport for Nodemailer",
-  "main": "src/pickup-transport.js",
+  "name": "nodemailer-s3-transport",
+  "version": "0.0.1",
+  "description": "S3 transport for Nodemailer",
+  "main": "src/s3-transport.js",
   "scripts": {
     "test": "grunt"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/andris9/nodemailer-pickup-transport.git"
+    "url": "git://github.com/daffinity/nodemailer-s3-transport.git"
   },
   "keywords": [
-    "Pickup",
+    "S3",
     "Nodemailer"
   ],
-  "author": "Andris Reinman",
+  "author": "John Wells",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/andris9/nodemailer-pickup-transport/issues"
+    "url": "https://github.com/daffinity/nodemailer-s3-transport/issues"
   },
-  "homepage": "http://github.com/andris9/nodemailer-pickup-transport",
+  "homepage": "http://github.com/daffinity/nodemailer-s3-transport",
   "dependencies": {},
   "devDependencies": {
     "chai": "~1.8.1",
